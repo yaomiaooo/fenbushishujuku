@@ -14,5 +14,12 @@ public interface HospitalService {
      * @return 医院列表
      */
     List<Hospital> getAllHospitals();
+
+    /**
+     * 根据ID获取医院详情
+     * @param id 医院ID
+     * @return 医院实体
+     */
+    Hospital getHospitalById(String id);
 }
 

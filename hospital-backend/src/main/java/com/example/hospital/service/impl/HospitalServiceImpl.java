@@ -21,5 +21,10 @@ public class HospitalServiceImpl implements HospitalService {
     public List<Hospital> getAllHospitals() {
         return hospitalMapper.selectList(null);
     }
+
+    @Override
+    public Hospital getHospitalById(String id) {
+        return hospitalMapper.selectById(id);
+    }
 }
 

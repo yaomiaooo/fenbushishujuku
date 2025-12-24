@@ -17,3 +17,11 @@ export function submitAppointment(data) {
     data: data
   });
 }
+
+// 获取医院介绍信息（用于院区详情页）
+export function getHospitalIntro(hospitalId) {
+  return request({
+    url: `/api/hospitals/intro/${hospitalId}`,
+    method: 'get'
+  });
+}

@@ -79,71 +79,121 @@
     </div>
   </template>
   
-  <script setup>
-  import { computed } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import { Icon } from '@iconify/vue';
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { Icon } from '@iconify/vue';
+import { getHospitalIntro } from '../api/hospital';
+
+const route = useRoute();
+const router = useRouter();
+
+// 获取路由参数中的 id (例如 'zhaohui' 或 'pingfeng')
+const campusId = route.params.id;
+
+// 将路由参数映射到 hospital_id
+const hospitalIdMap = {
+  'zhaohui': '1',  // 朝晖院区
+  'pingfeng': '2'  // 屏峰院区
+};
+
+// 响应式数据
+const hospitalData = ref(null);
+const loading = ref(true);
+
+// 从 hospital_intro 字段拆分段落（按句号拆分）
+const splitIntoParagraphs = (introText) => {
+  if (!introText) return [];
   
-  const route = useRoute();
-  const router = useRouter();
+  // 按句号拆分，保留句号，过滤空字符串
+  const paragraphs = introText
+    .split(/[。！？]/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+    .map(s => s + '。');
   
-  // 获取路由参数中的 id (例如 'zhaohui' 或 'pingfeng')
-  const campusId = route.params.id;
+  // 如果拆分后没有段落，返回原文本
+  if (paragraphs.length === 0) {
+    return [introText];
+  }
   
-  // --- 模拟数据库数据 ---
-  const campusData = {
-    // 朝晖院区数据 (复刻截图文字)
-    'zhaohui': {
-      name: '朝晖院区',
-      desc: '浙江工业大学健行医院成立于1984年，是浙江省卫生健康委直属的集医疗、科研、教学、预防、保健、康复于一体的大型综合性三级甲等医院。',
-      address: '杭州市上塘路158号',
-      phone: '0571-85893XXX',
-      image: 'https://images.unsplash.com/photo-1587351021759-3e566b9af9ef?q=80&w=1000',
-      paragraphs: [
-        '目前有朝晖、望江山、越城、富阳4个已运行院区和滨江、萧山2个在建院区。以及浙江工业大学健行医院绍兴医院和毕节医院2个国家区域医疗中心建设项目。',
-        '目前开放床位3600张，在职职工4578人，其中高级职称800余人。医院学科齐全、设备先进、技术雄厚。',
-        '以“院有品牌、科有特色、人有专长”享誉省内外。'
-      ],
-      highlights: {
-        title: '4个国家临床重点专科 (建设项目)',
-        items: ['普通外科', '肿瘤科', '泌尿外科', '临床护理']
-      }
-    },
-    
-    // 屏峰院区数据 (模拟数据)
-    'pingfeng': {
-      name: '屏峰院区',
-      desc: '屏峰院区（模拟）位于风景秀丽的屏峰山麓，主打康复与老年医学，环境优美，设施一流。',
-      address: '杭州市留和路288号 (模拟地址)',
-      phone: '0571-8522XXXX',
-      image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000',
-      paragraphs: [
-        '屏峰院区依托工业大学的工科优势，重点发展“医工结合”特色项目，特别是在智能康复设备研发与临床应用方面处于省内领先地位。',
-        '院区设有床位800张，配备全套进口康复机器人设备。',
-        '这里不仅是医疗中心，也是高端人才的疗休养基地。'
-      ],
-      highlights: {
-        title: '2个省级重点实验室',
-        items: ['智能康复工程', '老年医学中心']
-      }
-    },
+  return paragraphs;
+};
+
+// 获取医院介绍数据
+const fetchHospitalIntro = async () => {
+  const hospitalId = hospitalIdMap[campusId];
+  if (!hospitalId) {
+    loading.value = false;
+    return;
+  }
   
-    // 默认兜底
-    'default': {
-      name: '未知院区',
+  try {
+    loading.value = true;
+    const response = await getHospitalIntro(hospitalId);
+    if (response.code === 200 && response.data) {
+      const hospital = response.data;
+      
+      // 构建院区数据
+      hospitalData.value = {
+        name: hospital.hospitalName || '未知院区',
+        desc: '浙江工业大学健行医院成立于1984年，是浙江省卫生健康委直属的集医疗、科研、教学、预防、保健、康复于一体的大型综合性三级甲等医院。',
+        address: hospital.hospitalAddress || '浙江省杭州市拱墅区潮王路158号',
+        phone: hospital.hospitalPhone || '0571-88880001',
+        image: 'https://images.unsplash.com/photo-1587351021759-3e566b9af9ef?q=80&w=1000',
+        paragraphs: splitIntoParagraphs(hospital.hospitalIntro),
+        highlights: {
+          title: hospitalId === '1' ? '4个国家临床重点专科 (建设项目)' : '2个省级重点实验室',
+          items: hospitalId === '1' 
+            ? ['普通外科', '肿瘤科', '泌尿外科', '临床护理']
+            : ['智能康复工程', '老年医学中心']
+        }
+      };
+    }
+  } catch (error) {
+    console.error('获取医院介绍失败:', error);
+    // 使用默认数据作为兜底
+    hospitalData.value = {
+      name: campusId === 'zhaohui' ? '朝晖院区' : '屏峰院区',
       desc: '暂无该院区详细介绍信息。',
       address: '未知',
       phone: '--',
       image: '',
       paragraphs: []
-    }
-  };
+    };
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchHospitalIntro();
+});
+
+// 计算属性：返回当前院区数据
+const currentCampus = computed(() => {
+  if (loading.value) {
+    return {
+      name: '加载中...',
+      desc: '正在加载院区信息...',
+      address: '',
+      phone: '',
+      image: '',
+      paragraphs: []
+    };
+  }
   
-  // 计算属性：根据 ID 返回对应数据
-  const currentCampus = computed(() => {
-    return campusData[campusId] || campusData['default'];
-  });
-  </script>
+  return hospitalData.value || {
+    name: '未知院区',
+    desc: '暂无该院区详细介绍信息。',
+    address: '未知',
+    phone: '--',
+    image: '',
+    paragraphs: []
+  };
+});
+</script>
   
   <style scoped>
   .campus-page {
