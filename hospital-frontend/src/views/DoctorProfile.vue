@@ -3,8 +3,7 @@
     <!-- 顶部操作条 -->
     <div class="card head-card">
       <div class="left">
-        <h3>个人信息维护 <small>Profile</small></h3>
-        <div class="sub">用于医生端资料展示与预约信息关联。请确保联系方式与执业信息准确。</div>
+        <h3>个人信息管理 <small>Profile</small></h3>
       </div>
 
       <div class="right">
@@ -25,16 +24,12 @@
 
         <div class="field">
           <label>姓名</label>
-          <input type="text" v-model.trim="form.name" :disabled="!editing" />
+          <input type="text" v-model.trim="form.name" disabled />
         </div>
 
         <div class="field">
           <label>性别</label>
-          <select v-model="form.gender" :disabled="!editing">
-            <option value="男">男</option>
-            <option value="女">女</option>
-            <option value="未知">未知</option>
-          </select>
+          <input type="text" v-model="form.gender" disabled />
         </div>
 
         <div class="field">
@@ -49,31 +44,6 @@
           <div v-if="editing && emailError" class="warn">{{ emailError }}</div>
         </div>
 
-        <div class="field">
-          <label>所属院区</label>
-          <input type="text" v-model.trim="form.hospital_name" :disabled="!editing" placeholder="例如：朝晖院区" />
-        </div>
-
-        <div class="field">
-          <label>所属科室</label>
-          <input type="text" v-model.trim="form.department_name" :disabled="!editing" placeholder="例如：心血管内科" />
-        </div>
-
-        <div class="field">
-          <label>职称</label>
-          <select v-model="form.title" :disabled="!editing">
-            <option value="住院医师">住院医师</option>
-            <option value="主治医师">主治医师</option>
-            <option value="副主任医师">副主任医师</option>
-            <option value="主任医师">主任医师</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>擅长领域</label>
-          <input type="text" v-model.trim="form.specialty" :disabled="!editing" placeholder="例如：冠心病/心律失常" />
-        </div>
-
         <div class="field full">
           <label>个人简介</label>
           <textarea v-model.trim="form.bio" :disabled="!editing" rows="4" placeholder="用于患者端展示的医生简介"></textarea>
@@ -83,25 +53,25 @@
       <div class="foot">
         <div class="meta">
           <div>最后更新时间：<span class="mono">{{ form.updated_at || '-' }}</span></div>
-          <div>提示：医生编号、院区/科室若由管理员维护，可在后端设为只读。</div>
         </div>
       </div>
     </div>
 
-    <!-- 快捷信息卡（可选） -->
+    <!-- 快捷信息卡 -->
     <div class="stats">
       <div class="stat">
-        <div class="k">当前科室</div>
+        <div class="k">所属院区</div>
+        <div class="v">{{ form.hospital_name || '-' }}</div>
+      </div>      
+      <div class="stat">
+        <div class="k">所属科室</div>
         <div class="v">{{ form.department_name || '-' }}</div>
       </div>
       <div class="stat">
         <div class="k">职称</div>
         <div class="v">{{ form.title || '-' }}</div>
       </div>
-      <div class="stat">
-        <div class="k">联系方式</div>
-        <div class="v">{{ form.phone || '-' }}</div>
-      </div>
+
       <div class="stat">
         <div class="k">展示状态</div>
         <div class="v">{{ editing ? '编辑中' : '只读' }}</div>
@@ -119,6 +89,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 const loading = ref(false)
 const editing = ref(false)
 const error = ref('')
+const hospitals = ref([])
+const departments = ref([])
 
 /* ======================
  * 页面表单（UI 使用）
@@ -132,6 +104,9 @@ const form = reactive({
   title: '',
   bio: '',
   hospital_id: '',
+  hospital_name: '',
+  department_id: '',
+  department_name: '',
   updated_at: ''
 })
 
@@ -151,7 +126,22 @@ function nowText() {
 }
 
 function apiUrl() {
-  return (import.meta.env.VITE_API_BASE || '') + '/api/doctor/profile'
+  const base = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
+  console.log('API Base URL:', base)
+  return base + '/api/doctor/profile'
+}
+
+function hospitalsApiUrl() {
+  const base = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
+  console.log('Hospitals API URL:', base + '/api/hospitals')
+  return base + '/api/hospitals'
+}
+
+function departmentsApiUrl(hospitalId = '') {
+  const base = (import.meta.env.VITE_API_BASE || 'http://localhost:8080') + '/api/hospital/departments'
+  const url = hospitalId ? `${base}?hospitalId=${hospitalId}` : base
+  console.log('Departments API URL:', url)
+  return url
 }
 
 /* ======================
@@ -166,7 +156,40 @@ function applyFromApi(data) {
   form.title = data.title || ''
   form.bio = data.doctorIntro || ''
   form.hospital_id = data.hospitalId || ''
+  form.hospital_name = data.hospitalName || ''
+  form.department_id = data.departmentId || ''
+  form.department_name = data.departmentName || ''
   form.updated_at = nowText()
+}
+
+/* ======================
+ * 加载医院列表
+ * ====================== */
+async function loadHospitals() {
+  try {
+    const resp = await fetch(hospitalsApiUrl())
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const json = await resp.json()
+    if (json.code !== 200) throw new Error(json.message)
+    hospitals.value = json.data || []
+  } catch (e) {
+    console.error('加载医院列表失败:', e)
+  }
+}
+
+/* ======================
+ * 加载科室列表
+ * ====================== */
+async function loadDepartments(hospitalId = '') {
+  try {
+    const resp = await fetch(departmentsApiUrl(hospitalId))
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const json = await resp.json()
+    if (json.code !== 200) throw new Error(json.message)
+    departments.value = json.data || []
+  } catch (e) {
+    console.error('加载科室列表失败:', e)
+  }
 }
 
 /* ======================
@@ -177,20 +200,40 @@ async function load() {
   error.value = ''
 
   try {
-    const token = localStorage.getItem('token')
-    const resp = await fetch(apiUrl(), {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+    // 并行加载医院列表和医生信息
+    const token = localStorage.getItem('hospital_token')
+    const [doctorResp, hospitalsResp] = await Promise.all([
+      fetch(apiUrl(), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      }),
+      fetch(hospitalsApiUrl())
+    ])
+
+    if (!doctorResp.ok) throw new Error(`医生信息 HTTP ${doctorResp.status}`)
+
+    const doctorJson = await doctorResp.json()
+    if (doctorJson.code !== 200) throw new Error(doctorJson.message)
+
+    // 加载医院列表
+    if (hospitalsResp.ok) {
+      const hospitalsJson = await hospitalsResp.json()
+      if (hospitalsJson.code === 200) {
+        hospitals.value = hospitalsJson.data || []
       }
-    })
+    }
 
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    // 应用医生数据
+    applyFromApi(doctorJson.data)
 
-    const json = await resp.json()
-    if (json.code !== 0) throw new Error(json.message)
-
-    applyFromApi(json.data)
+    // 如果医生有医院ID，加载对应科室
+    if (doctorJson.data.hospitalId) {
+      await loadDepartments(doctorJson.data.hospitalId)
+    } else {
+      await loadDepartments()
+    }
   } catch (e) {
     console.error(e)
     error.value = '医生信息加载失败，请稍后重试'
@@ -210,6 +253,28 @@ function startEdit() {
 function cancelEdit() {
   if (snapshot) Object.assign(form, snapshot)
   editing.value = false
+}
+
+
+/* ======================
+ * 医院选择变化处理
+ * ====================== */
+async function onHospitalChange() {
+  // 清空科室选择
+  form.department_id = ''
+  form.department_name = ''
+
+  // 重新加载科室列表
+  if (form.hospital_id) {
+    await loadDepartments(form.hospital_id)
+
+    // 更新医院名称显示
+    const selectedHospital = hospitals.value.find(h => h.hospitalId === form.hospital_id)
+    form.hospital_name = selectedHospital ? selectedHospital.hospitalName : ''
+  } else {
+    departments.value = []
+    form.hospital_name = ''
+  }
 }
 
 /* ======================
@@ -248,12 +313,17 @@ async function save() {
   error.value = ''
 
   try {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('hospital_token')
 
-    const payload = {
-      doctorPhone: form.phone,
-      doctorEmail: form.email,
-      doctorIntro: form.bio
+    const payload = {}
+    if (form.phone && form.phone.trim()) {
+      payload.doctorPhone = form.phone.trim()
+    }
+    if (form.email && form.email.trim()) {
+      payload.doctorEmail = form.email.trim()
+    }
+    if (form.bio && form.bio.trim()) {
+      payload.doctorIntro = form.bio.trim()
     }
 
     const resp = await fetch(apiUrl(), {
@@ -268,7 +338,7 @@ async function save() {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
 
     const json = await resp.json()
-    if (json.code !== 0) throw new Error(json.message)
+    if (json.code !== 200) throw new Error(json.message)
 
     applyFromApi(json.data)
     editing.value = false
@@ -330,8 +400,8 @@ onMounted(load)
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
 }
 
 .field label {
@@ -344,7 +414,7 @@ onMounted(load)
 .field input,
 .field select,
 .field textarea {
-  width: 100%;
+  width: 96%;
   padding: 10px 10px;
   border: 1px solid #e6e6e6;
   border-radius: 8px;

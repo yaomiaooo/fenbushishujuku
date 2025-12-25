@@ -184,20 +184,6 @@ const routes = [
       { path: 'profile', name: 'DoctorProfile', component: DoctorProfile, meta: { title: '个人信息' } },
     ]
   },
-<<<<<<< HEAD
-
-  { path: '/intro', name: 'HospitalIntro', component: HospitalIntro },
-  { path: '/campus/:id', name: 'CampusDetail', component: CampusDetail },
-  { path: '/schedule', name: 'OutpatientSchedule', component: OutpatientSchedule },
-  { path: '/specialist', name: 'SpecialistList', component: SpecialistList },
-  { path: '/department', name: 'DepartmentNavigation', component: DepartmentNavigation },
-  { path: '/appointment', name: 'AppointmentRegister', component: AppointmentRegister },
-  { path: '/contact', name: 'ContactUs', component: ContactUs },
-  { path: '/patients', name: 'MyPatients', component: MyPatients },
-  { path: '/profile', name: 'MyProfile', component: MyProfile },
-  { path: '/reports', name: 'MyReports', component: MyReports },
-  { path: '/visit-records', name: 'VisitRecords', component: VisitRecords }
-=======
   // 2. 添加这条新路由
   {
     path: '/intro',         // 浏览器地址栏会显示这个
@@ -261,7 +247,6 @@ const routes = [
     name: 'VisitRecords',
     component: VisitRecords
   }
->>>>>>> 3c6f2360849a516c0cde18bbdb353294f177f5a0
 ]
 
 const router = createRouter({

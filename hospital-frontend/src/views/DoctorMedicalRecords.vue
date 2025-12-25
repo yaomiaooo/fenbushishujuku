@@ -207,7 +207,7 @@ async function loadRecords() {
   error.value = ''
   try {
     const url = buildUrl()
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('hospital_token')
     const resp = await fetch(url, {
       method: 'GET',
       headers: {

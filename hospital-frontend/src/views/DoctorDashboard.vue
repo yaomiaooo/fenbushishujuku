@@ -23,9 +23,6 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="sys-status">
-          <span class="dot green"></span> 数据节点: Node-01
-        </div>
         <button class="btn-logout" @click="handleLogout">
           <Icon icon="mdi:logout" /> 退出
         </button>
