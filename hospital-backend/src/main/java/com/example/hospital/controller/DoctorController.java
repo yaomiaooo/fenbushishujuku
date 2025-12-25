@@ -2,6 +2,7 @@ package com.example.hospital.controller;
 
 import com.example.hospital.common.Result;
 import com.example.hospital.common.UserLoginToken;
+import com.example.hospital.dto.ChangePasswordRequest;
 import com.example.hospital.dto.DoctorProfileResponse;
 import com.example.hospital.dto.DoctorProfileUpdateRequest;
 import com.example.hospital.entity.Doctor;
@@ -49,5 +50,32 @@ public class DoctorController {
         // 返回更新后的完整资料
         DoctorProfileResponse doctorProfile = doctorService.getDoctorProfile(userId);
         return Result.success(doctorProfile);
+    }
+
+    /**
+     * 修改当前登录医生的密码
+     * @param request HttpServletRequest
+     * @param changePasswordRequest 包含旧密码和新密码
+     * @return 修改结果
+     */
+    @UserLoginToken
+    @PostMapping("/change-password")
+    public Result<String> changePassword(HttpServletRequest request, @RequestBody ChangePasswordRequest changePasswordRequest) {
+        String userId = (String) request.getAttribute("userId");
+
+        if (userId == null || userId.isEmpty()) {
+            return Result.error("用户身份验证失败，请重新登录");
+        }
+
+        try {
+            boolean success = doctorService.changePassword(userId, changePasswordRequest);
+            if (success) {
+                return Result.success("密码修改成功");
+            } else {
+                return Result.error("修改密码失败，请重试");
+            }
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
     }
 }

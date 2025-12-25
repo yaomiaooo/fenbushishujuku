@@ -2,12 +2,15 @@ package com.example.hospital.service.impl;
 
 import com.example.hospital.common.BusinessException;
 import com.example.hospital.common.ResultCode;
+import com.example.hospital.dto.ChangePasswordRequest;
 import com.example.hospital.dto.DoctorProfileResponse;
 import com.example.hospital.dto.DoctorProfileUpdateRequest;
 import com.example.hospital.entity.Department;
 import com.example.hospital.entity.Doctor;
 import com.example.hospital.entity.Hospital;
+import com.example.hospital.entity.User;
 import com.example.hospital.mapper.DoctorMapper;
+import com.example.hospital.mapper.UserMapper;
 import com.example.hospital.service.DepartmentService;
 import com.example.hospital.service.DoctorService;
 import com.example.hospital.service.HospitalService;
@@ -22,6 +25,9 @@ public class DoctorServiceImpl implements DoctorService {
 
     @Autowired
     private DoctorMapper doctorMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private HospitalService hospitalService;
@@ -138,5 +144,30 @@ public class DoctorServiceImpl implements DoctorService {
 
         // 重新查询以返回最新数据
         return doctorMapper.selectByUserId(userId);
+    }
+
+    @Override
+    public boolean changePassword(String userId, ChangePasswordRequest request) {
+        // 获取用户信息进行密码验证
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.USER_NOT_EXIST, "用户不存在");
+        }
+
+        // 验证旧密码
+        if (!user.getUserPassword().equals(request.getOldPassword())) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "当前密码错误");
+        }
+
+        // 验证新密码长度
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "新密码至少6位");
+        }
+
+        // 更新密码
+        user.setUserPassword(request.getNewPassword());
+        int result = userMapper.updateById(user);
+
+        return result > 0;
     }
 }

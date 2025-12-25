@@ -1,5 +1,6 @@
 package com.example.hospital.service;
 
+import com.example.hospital.dto.ChangePasswordRequest;
 import com.example.hospital.dto.DoctorProfileResponse;
 import com.example.hospital.dto.DoctorProfileUpdateRequest;
 import com.example.hospital.entity.Doctor;
@@ -30,4 +31,12 @@ public interface DoctorService {
      * @return 更新后的医生实体
      */
     Doctor updateDoctorProfile(String userId, DoctorProfileUpdateRequest request);
+
+    /**
+     * 修改医生密码
+     * @param userId 用户ID
+     * @param request 密码修改请求
+     * @return 是否修改成功
+     */
+    boolean changePassword(String userId, ChangePasswordRequest request);
 }

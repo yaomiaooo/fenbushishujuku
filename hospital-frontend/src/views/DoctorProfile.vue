@@ -8,6 +8,7 @@
 
       <div class="right">
         <span v-if="error" class="error">{{ error }}</span>
+        <button v-if="!editing" class="btn" @click="showChangePassword">修改密码</button>
         <button v-if="!editing" class="btn primary" @click="startEdit">编辑</button>
         <button v-else class="btn primary" @click="save" :disabled="loading">{{ loading ? '保存中...' : '保存' }}</button>
         <button v-if="editing" class="btn" @click="cancelEdit" :disabled="loading">取消</button>
@@ -78,6 +79,49 @@
       </div>
     </div>
 
+    <!-- 修改密码弹窗 -->
+    <div v-if="showPasswordModal" class="modal-mask" @click.self="showPasswordModal=false">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>修改密码</h3>
+          <button class="close-btn" @click="showPasswordModal=false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>当前密码</label>
+            <input
+              type="password"
+              v-model="passwordForm.oldPassword"
+              placeholder="请输入当前密码"
+            />
+          </div>
+          <div class="field">
+            <label>新密码</label>
+            <input
+              type="password"
+              v-model="passwordForm.newPassword"
+              placeholder="请输入新密码（至少6位）"
+            />
+          </div>
+          <div class="field">
+            <label>确认新密码</label>
+            <input
+              type="password"
+              v-model="passwordForm.confirmPassword"
+              placeholder="请再次输入新密码"
+            />
+          </div>
+          <div v-if="passwordError" class="error">{{ passwordError }}</div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" @click="showPasswordModal=false">取消</button>
+          <button class="btn primary" @click="changePassword" :disabled="changingPassword">
+            {{ changingPassword ? '修改中...' : '确认修改' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -92,6 +136,16 @@ const editing = ref(false)
 const error = ref('')
 const hospitals = ref([])
 const departments = ref([])
+
+// 修改密码相关状态
+const showPasswordModal = ref(false)
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const passwordError = ref('')
+const changingPassword = ref(false)
 
 /* ======================
  * 页面表单（UI 使用）
@@ -251,6 +305,69 @@ async function load() {
     error.value = '医生信息加载失败，请稍后重试'
   } finally {
     loading.value = false
+  }
+}
+
+/* ======================
+ * 修改密码
+ * ====================== */
+function showChangePassword() {
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordError.value = ''
+  showPasswordModal.value = true
+}
+
+async function changePassword() {
+  // 验证输入
+  if (!passwordForm.oldPassword.trim()) {
+    passwordError.value = '请输入当前密码'
+    return
+  }
+  if (!passwordForm.newPassword.trim()) {
+    passwordError.value = '请输入新密码'
+    return
+  }
+  if (passwordForm.newPassword.length < 6) {
+    passwordError.value = '新密码至少6位'
+    return
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    passwordError.value = '两次输入的新密码不一致'
+    return
+  }
+
+  changingPassword.value = true
+  passwordError.value = ''
+
+  try {
+    const token = localStorage.getItem('hospital_token')
+    const response = await fetch('http://localhost:8080/api/doctor/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      body: JSON.stringify({
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword
+      })
+    })
+
+    const result = await response.json()
+
+    if (result.code === 200) {
+      alert('密码修改成功！')
+      showPasswordModal.value = false
+    } else {
+      passwordError.value = result.message || '密码修改失败'
+    }
+  } catch (error) {
+    passwordError.value = '网络错误，请重试'
+    console.error('修改密码失败:', error)
+  } finally {
+    changingPassword.value = false
   }
 }
 
@@ -480,4 +597,71 @@ onMounted(load)
 }
 .stat .k { font-size: 0.85rem; color: #999; }
 .stat .v { margin-top: 6px; font-size: 1.2rem; font-weight: 900; color: #004ea2; }
+
+/* 修改密码弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.close-btn:hover {
+  background: #f5f5f5;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-foot {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid #f0f0f0;
+}
 </style>
