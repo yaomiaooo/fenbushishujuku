@@ -99,6 +99,31 @@
       // 将Token保存到localStorage，以便后续请求使用
       localStorage.setItem('hospital_token', token);
 
+      // 如果是医生登录，获取医生信息并存储
+      if (form.value.role === 'doctor') {
+        try {
+          const doctorRes = await fetch('http://localhost:8080/api/doctor/profile', {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (doctorRes.ok) {
+            const doctorData = await doctorRes.json();
+            if (doctorData.code === 200) {
+              const doctor = doctorData.data;
+              localStorage.setItem('doctorName', doctor.doctorName || '医生');
+              localStorage.setItem('doctorDept', doctor.departmentName || '未设置科室');
+            }
+          }
+        } catch (error) {
+          console.error('获取医生信息失败:', error);
+          // 设置默认值
+          localStorage.setItem('doctorName', '医生');
+          localStorage.setItem('doctorDept', '未设置科室');
+        }
+      }
+
       // 根据角色跳转到不同页面
       if (form.value.role === 'user') {
         router.push('/user');

@@ -160,6 +160,17 @@ function applyFromApi(data) {
   form.department_id = data.departmentId || ''
   form.department_name = data.departmentName || ''
   form.updated_at = nowText()
+
+  // 更新localStorage中的医生信息，用于Dashboard显示
+  if (data.doctorName) {
+    localStorage.setItem('doctorName', data.doctorName)
+  }
+  if (data.title) {
+    localStorage.setItem('doctorTitle', data.title)
+  }
+  if (data.departmentName) {
+    localStorage.setItem('doctorDept', data.departmentName)
+  }
 }
 
 /* ======================

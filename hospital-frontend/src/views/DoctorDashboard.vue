@@ -60,8 +60,8 @@ import { Icon } from '@iconify/vue'
 const router = useRouter()
 const route = useRoute()
 
-const doctorName = computed(() => localStorage.getItem('doctorName') || '李华 主任医师')
-const doctorDept = computed(() => localStorage.getItem('doctorDept') || '心血管内科')
+const doctorName = computed(() => localStorage.getItem('doctorName') || '医生')
+const doctorDept = computed(() => localStorage.getItem('doctorDept') || '未设置科室')
 
 const currentTitle = computed(() => route.meta?.title || '工作台')
 
@@ -84,9 +84,11 @@ function go(item) {
 
 function handleLogout() {
   if (confirm('确定要退出登录吗？')) {
-    // 你若有 token/role，可在这里清理
-    // localStorage.removeItem('token')
-    // localStorage.removeItem('role')
+    // 清除所有登录相关数据
+    localStorage.removeItem('hospital_token')
+    localStorage.removeItem('doctorName')
+    localStorage.removeItem('doctorTitle')
+    localStorage.removeItem('doctorDept')
     router.push('/login')
   }
 }
@@ -179,6 +181,7 @@ function handleLogout() {
 .avatar { width: 40px; height: 40px; background: #e6f7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 .info { display: flex; flex-direction: column; text-align: right; }
 .info .name { font-weight: bold; font-size: 0.9rem; color: #333; }
+.info .title { font-size: 0.75rem; color: #666; }
 .info .dept { font-size: 0.75rem; color: #999; }
 .bell-icon { font-size: 1.5rem; color: #666; cursor: pointer; margin-left: 10px; }
 
